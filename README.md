@@ -1,4 +1,4 @@
-HMM
+HMM : Original
 ===
 
 A numpy/python-only Hidden Markov Models framework. No other dependencies are required.
@@ -17,3 +17,15 @@ Major supported features:
 Open concerns:
 * Examples are somewhat out-dated
 * Convergence isn't guaranteed when using certain weighing functions 
+
+----------
+
+HMM : Fork
+===
+
+Original reposotory has been forked to add a method for optimizes Viterbi forced alignment
+
+Further more: 
+
+* Underflow issues have been resolved by normalizing probs for each time t at deoding
+* Backtracking logic is in a separate class Path to improve readability
