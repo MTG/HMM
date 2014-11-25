@@ -9,7 +9,6 @@ This code is based on:
 '''
 
 import numpy
-from IPython.core.tests.test_formatters import numpy
 numpy.set_printoptions(threshold='nan')
 
 class _BaseHMM(object):
