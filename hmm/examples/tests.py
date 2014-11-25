@@ -47,7 +47,7 @@ def test_simple():
     
 def test_rand():
     n = 5
-    m = 4
+    m = 9
     d = 2
     atmp = numpy.random.random_sample((n, n))
     row_sums = atmp.sum(axis=1)
@@ -104,6 +104,6 @@ def test_discrete():
     print "B", hmm2.B
     
     
-#test_simple()
+# test_simple()
 test_rand()
 #test_discrete()

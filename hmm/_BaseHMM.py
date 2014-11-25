@@ -9,6 +9,8 @@ This code is based on:
 '''
 
 import numpy
+from IPython.core.tests.test_formatters import numpy
+numpy.set_printoptions(threshold='nan')
 
 class _BaseHMM(object):
     '''
@@ -147,6 +149,96 @@ class _BaseHMM(object):
         for i in xrange(1, len(observations)):
             path[len(observations)-i-1] = psi[len(observations)-i][ path[len(observations)-i] ]
         return path
+    
+    
+    
+    def _viterbiForced(self, observations):
+        '''
+        checks only previous two states, TODO: put these into Viterbi2 method and delete this one
+        '''
+        print "loading probs all observations"
+        # similar to the forward-backward algorithm, we need to make sure that we're using fresh data for the given observations.
+        self._mapB(observations)
+        
+        print "decoding..."
+        delta = numpy.zeros((len(observations),self.n),dtype=self.precision)
+        psi = numpy.zeros((len(observations),self.n),dtype=self.precision)
+        
+        # init
+        for x in xrange(self.n):
+            delta[0][x] = self.pi[x]*self.B_map[x][0]
+            psi[0][x] = 0
+        
+        delta[0] = normalizeProbs(delta[0])
+
+        # induction
+        for t in xrange(1,len(observations)):
+            for j in xrange(self.n):
+                #### in forced a-nt: only possible to come form prev. or curr state  
+                startRange = j-1
+                # if beginning state, no prev. state
+                if j == 0:
+                    startRange = j
+                
+                for i in xrange(startRange,j+1):
+                    if (delta[t][j] < delta[t-1][i]*self.A[i][j]):
+                        delta[t][j] = delta[t-1][i]*self.A[i][j]
+                        psi[t][j] = i
+                delta[t][j] *= self.B_map[j][t]
+            # make sure prob multiplications do not reach underflow
+            delta[t] = normalizeProbs(delta[t])
+
+        
+        path = numpy.zeros((len(observations)),dtype=self.precision)
+        
+        # termination: start at end state
+        path[len(observations)-1] = self.n - 1
+        
+        # path backtracing
+#        path = numpy.zeros((len(observations)),dtype=self.precision) ### 2012-11-17 - BUG FIX: wrong reinitialization destroyed the last state in the path
+        for i in xrange(1, len(observations)):
+            path[len(observations)-i-1] = psi[len(observations)-i][ path[len(observations)-i] ]
+        return path, psi, delta
+    
+        
+    def _viterbiForced2(self, observations):
+        '''
+        with original viterbi, all previous states
+        '''
+        # similar to the forward-backward algorithm, we need to make sure that we're using fresh data for the given observations.
+        self._mapB(observations)
+        
+        delta = numpy.zeros((len(observations),self.n),dtype=self.precision)
+        psi = numpy.zeros((len(observations),self.n),dtype=self.precision)
+        
+        # init
+        for x in xrange(self.n):
+            delta[0][x] = self.pi[x]*self.B_map[x][0]
+            psi[0][x] = 0
+        
+        delta[0] = normalizeProbs(delta[0])
+        
+        # induction
+        for t in xrange(1,len(observations)):
+            for j in xrange(self.n):
+                for i in xrange(self.n):
+                    multipliedVal = delta[t-1][i] * self.A[i][j]
+                    if ( multipliedVal > delta[t][j]):
+                        delta[t][j] = multipliedVal
+                        psi[t][j] = i
+                delta[t][j] *= self.B_map[j][t]
+            delta[t] = normalizeProbs(delta[t])
+
+        path = numpy.zeros((len(observations)),dtype=self.precision)
+        
+        # termination: start at end state
+        path[len(observations)-1] = self.n - 1
+        
+        # path backtracing
+#        path = numpy.zeros((len(observations)),dtype=self.precision) ### 2012-11-17 - BUG FIX: wrong reinitialization destroyed the last state in the path
+        for i in xrange(1, len(observations)):
+            path[len(observations)-i-1] = psi[len(observations)-i][ path[len(observations)-i] ]
+        return path, psi, delta
      
     def _calcxi(self,observations,alpha=None,beta=None):
         '''
@@ -338,4 +430,18 @@ class _BaseHMM(object):
         increase performance.
         '''
         raise NotImplementedError("a mapping function for B(observable probabilities) must be implemented")
+    
+def normalizeProbs(probs):
+        '''
+        ADDED.
+         The sum of probs in array @probs to equal 1
+        '''
+        normalizedProbs = []
         
+        totalProb = numpy.sum(probs)
+        
+        for prob  in probs:
+            prob = prob / totalProb
+            normalizedProbs.append(prob)
+            
+        return  numpy.array( normalizedProbs)

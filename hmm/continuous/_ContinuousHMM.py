@@ -213,17 +213,9 @@ class _ContinuousHMM(_BaseHMM):
         
         return w_new, means_new, covars_new
     
-    def _normalize(self, arr):
-        '''
-        Helper method to normalize probabilities, so that
-        they all sum to '1'
-        '''
-        summ = numpy.sum(arr)
-        for i in xrange(len(arr)):
-            arr[i] = (arr[i]/summ)
-        return arr
+
     
-    def _pdf(self,x,mean,covar):
+    def _pdf(self, x, mean, covar):
         '''
         Deriving classes should implement this method. This is the specific
         Probability Distribution Function that will be used in each
