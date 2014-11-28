@@ -6,6 +6,12 @@ Created on Nov 12, 2012
 
 from hmm._BaseHMM import _BaseHMM
 import numpy
+import logging
+import sys
+
+
+# to replace 0: avoid log(0) = -inf. -Inf + p(d) makes useless the effect of  p(d)
+MINIMAL_PROB = sys.float_info.min
 
 class _ContinuousHMM(_BaseHMM):
     '''
@@ -86,8 +92,11 @@ class _ContinuousHMM(_BaseHMM):
         self.Bmix_map = numpy.zeros( (self.n,self.m,len(observations)), dtype=self.precision)
         for j in xrange(self.n):
             for t in xrange(len(observations)):
-                self.B_map[j][t] = self._calcbjt(j, t, observations[t])
-                
+                lik = self._calcbjt(j, t, observations[t])
+                if lik == 0: 
+                    logging.warning("obs likelihood at time {} for state {} = 0. Repair by adding {}".format(t,j, MINIMAL_PROB))
+                    lik = MINIMAL_PROB
+                self.B_map[j][t] = lik
     """
     b[j][Ot] = sum(1...M)w[j][m]*b[j][m][Ot]
     Returns b[j][Ot] based on the current model parameters (means, covars, weights) for the mixtures.
@@ -213,9 +222,17 @@ class _ContinuousHMM(_BaseHMM):
         
         return w_new, means_new, covars_new
     
-
+    def _normalize(self, arr):
+        '''
+        Helper method to normalize probabilities, so that
+        they all sum to '1'
+        '''
+        summ = numpy.sum(arr)
+        for i in xrange(len(arr)):
+            arr[i] = (arr[i]/summ)
+        return arr
     
-    def _pdf(self, x, mean, covar):
+    def _pdf(self,x,mean,covar):
         '''
         Deriving classes should implement this method. This is the specific
         Probability Distribution Function that will be used in each

@@ -27,5 +27,5 @@ Original reposotory has been forked to add a method for optimizes Viterbi forced
 
 Further more: 
 
-* Underflow issues have been resolved by normalizing probs for each time t at deoding
+* Underflow issues have been resolved by normalizing probs for each time t at decoding
 * Backtracking logic is in a separate class Path to improve readability
