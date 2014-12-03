@@ -8,7 +8,14 @@ from hmm._BaseHMM import _BaseHMM
 import numpy
 import logging
 import sys
+import os
 
+
+parentDir = os.path.abspath(  os.path.join(os.path.dirname(os.path.realpath(sys.argv[0]) ), os.path.pardir,  os.path.pardir, os.path.pardir ) ) 
+pathUtils = os.path.join(parentDir, 'utilsLyrics')
+if pathUtils not in sys.path: sys.path.append(pathUtils )
+
+from Utilz import writeListOfListToTextFile
 
 # to replace 0: avoid log(0) = -inf. -Inf + p(d) makes useless the effect of  p(d)
 MINIMAL_PROB = sys.float_info.min
@@ -58,6 +65,19 @@ class _ContinuousHMM(_BaseHMM):
         self.min_std = min_std
 
         self.reset(init_type=init_type)
+        
+        
+        '''
+        flag to load some decoding info from cached files, for example bMap and durationLookup table  
+        makes decoding faster 
+        '''
+        self.usePersistentFiles = False
+    
+    def setPersitentFiles(self, usePersistentFiles, URI_noExt):
+       
+        self.usePersistentFiles =  usePersistentFiles
+        self.PATH_BMAP = URI_noExt + '.bmap'
+        
 
     def reset(self,init_type='uniform'):
         '''
@@ -89,6 +109,14 @@ class _ContinuousHMM(_BaseHMM):
         - self.Bmix_map - computesand maps Bjm(Ot) to Bjm(t).
         '''        
         self.B_map = numpy.zeros( (self.n,len(observations)), dtype=self.precision)
+        
+        if self.usePersistentFiles and os.path.exists(self.PATH_BMAP): 
+            self.B_map = numpy.loadtxt(self.PATH_BMAP)
+            if self.B_map.shape[1] == len(observations):
+#                 sys.exit('{} does not store all feature vectors. delete it and generate them again'.format(self.PATH_BMAP))
+                return     
+        
+        
         self.Bmix_map = numpy.zeros( (self.n,self.m,len(observations)), dtype=self.precision)
         for j in xrange(self.n):
             for t in xrange(len(observations)):
@@ -97,6 +125,11 @@ class _ContinuousHMM(_BaseHMM):
                     logging.warning("obs likelihood at time {} for state {} = 0. Repair by adding {}".format(t,j, MINIMAL_PROB))
                     lik = MINIMAL_PROB
                 self.B_map[j][t] = lik
+        
+        if self.usePersistentFiles:        
+            writeListOfListToTextFile(self.B_map, None , self.PATH_BMAP)
+
+        
     """
     b[j][Ot] = sum(1...M)w[j][m]*b[j][m][Ot]
     Returns b[j][Ot] based on the current model parameters (means, covars, weights) for the mixtures.
