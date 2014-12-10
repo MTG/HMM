@@ -155,7 +155,7 @@ class _BaseHMM(object):
         '''
         checks only previous two states, TODO: put these into Viterbi2 method and delete this one
         '''
-        print "loading probs all observations"
+     
         # similar to the forward-backward algorithm, we need to make sure that we're using fresh data for the given observations.
         self._mapB(observations)
         
